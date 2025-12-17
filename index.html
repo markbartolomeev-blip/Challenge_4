@@ -22,7 +22,7 @@ body{
   z-index:-2;
 }
 
-/* затемнения */
+/* overlays */
 .overlay{
   position:fixed;
   inset:0;
@@ -41,14 +41,14 @@ body{
   max-width:90%;
 }
 
-/* ИГРА */
+/* GAME */
 #game{
   position:relative;
   width:100%;
   height:100vh;
 }
 
-/* КОНВЕЙЕР */
+/* CONVEYOR */
 #conveyor{
   position:absolute;
   top:42%;
@@ -58,31 +58,30 @@ body{
   border-radius:25px;
   background:
     repeating-linear-gradient(
-      -45deg,
-      #666 0,
-      #666 20px,
-      #777 20px,
-      #777 40px
+      to right,
+      #6f6f6f 0,
+      #6f6f6f 30px,
+      #7a7a7a 30px,
+      #7a7a7a 60px
     );
   box-shadow:
-    inset 0 10px 15px rgba(255,255,255,.15),
-    inset 0 -10px 15px rgba(0,0,0,.4),
-    0 8px 20px rgba(0,0,0,.6);
+    inset 0 10px 12px rgba(255,255,255,.18),
+    inset 0 -12px 18px rgba(0,0,0,.5),
+    0 10px 25px rgba(0,0,0,.7);
   overflow:hidden;
 }
 
-/* анимация ленты */
-#conveyor::before{
-  content:"";
+/* smooth belt motion */
+#belt{
   position:absolute;
   inset:0;
   background:inherit;
-  animation:moveBelt 1s linear infinite;
+  animation:beltMove .6s linear infinite;
 }
 
-@keyframes moveBelt{
-  from{background-position:0 0}
-  to{background-position:40px 0}
+@keyframes beltMove{
+  from{transform:translateX(0)}
+  to{transform:translateX(-60px)}
 }
 
 #zone{
@@ -136,7 +135,7 @@ body{
   font-size:22px;
 }
 
-/* кнопка */
+/* button */
 #controls{
   position:absolute;
   bottom:30px;
@@ -161,19 +160,17 @@ body{
 
 <div id="bg"></div>
 
-<!-- ЗАГРУЗКА -->
 <div class="overlay" id="loading">
   <div class="box"><h2>Загрузка…</h2></div>
 </div>
 
-<!-- ОБУЧЕНИЕ -->
 <div class="overlay" id="tutorial" style="display:none">
   <div class="box">
     <h2>Обучение 👊</h2>
     <p>
       Выбивай <b>неправильные</b> конфеты в белой зоне.<br><br>
-      ❌ Ошибка — минус сердце.<br><br>
-      <b>Цель:</b> 50 неправильных
+      Ошибка — минус ❤️<br><br>
+      <b>Цель:</b> 50
     </p>
     <button onclick="startGame()">Начать</button>
   </div>
@@ -186,7 +183,11 @@ body{
   </div>
 
   <img id="fist" src="E83F4545-0152-4EEE-B616-9817D1655B1C.png">
-  <div id="conveyor"></div>
+
+  <div id="conveyor">
+    <div id="belt"></div>
+  </div>
+
   <div id="zone"></div>
 
   <div id="controls">
@@ -209,7 +210,7 @@ const images=[
 ];
 
 let candies=[];
-let speed=1.6;
+let speed=2.2;
 let hits=0;
 let hearts=3;
 let startTime=0;
@@ -220,7 +221,6 @@ const counter=document.getElementById("counter");
 const heartsEl=document.getElementById("hearts");
 const fist=document.getElementById("fist");
 
-/* загрузка */
 let loaded=0;
 images.forEach(src=>{
   const i=new Image();
@@ -238,7 +238,7 @@ function startGame(){
   tutorial.style.display="none";
   game.style.display="block";
   startTime=Date.now();
-  setInterval(spawnCandy,1300);
+  setInterval(spawnCandy,1200);
   requestAnimationFrame(loop);
 }
 
@@ -264,9 +264,9 @@ function loseHeart(){
 
 function loop(){
   const elapsed=(Date.now()-startTime)/1000;
-  if(elapsed>10) speed=2;
-  if(elapsed>30) speed=2.7;
-  if(elapsed>60) speed=3.5;
+  if(elapsed>10) speed=2.8;
+  if(elapsed>30) speed=3.5;
+  if(elapsed>60) speed=4.5;
 
   candies.forEach((c,i)=>{
     let x=parseFloat(c.style.left);
