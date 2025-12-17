@@ -3,78 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TulenmasCandy Box</title>
+<title>TulenmasCandy Conveyor</title>
 
 <style>
 *{box-sizing:border-box}
 body{
   margin:0;
-  background:#0b0b0b;
-  color:#fff;
   font-family:Arial, sans-serif;
+  background:#000;
+  overflow:hidden;
   user-select:none;
-  overflow:hidden;
 }
 
-#top{
-  text-align:center;
-  font-size:26px;
-  padding:10px;
-}
-
-#hearts{
+#bg{
   position:fixed;
-  left:10px;
-  top:80px;
-  font-size:24px;
-}
-
-#box{
-  position:relative;
-  margin:50px auto 0;
-  width:90vw;
-  max-width:420px;
-  height:55vh;
-  border:4px solid #fff;
-  border-radius:20px;
-  background:#1a1a1a;
-  overflow:hidden;
-}
-
-.candy{
-  position:absolute;
-  width:26px;
-  pointer-events:none;
-}
-
-#controls{
-  position:fixed;
-  bottom:20px;
-  left:50%;
-  transform:translateX(-50%);
-  text-align:center;
-}
-
-#stopBtn{
-  width:100px;
-  height:100px;
-  border-radius:50%;
-  border:none;
-  background:red;
-  color:#fff;
-  font-size:18px;
-  font-weight:bold;
-}
-
-#counter{
-  margin-top:8px;
-  font-size:18px;
+  inset:0;
+  background:url("0864A2E3-E668-43BB-ABE0-5D62B44467FC.jpeg") center/cover no-repeat;
+  z-index:-2;
 }
 
 .overlay{
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,.88);
+  background:rgba(0,0,0,.85);
+  color:#fff;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -85,214 +37,226 @@ body{
 .box{
   padding:20px;
   font-size:18px;
+  max-width:90%;
 }
 
-button{
-  padding:12px 22px;
+#game{
+  position:relative;
+  width:100%;
+  height:100vh;
+}
+
+#conveyor{
+  position:absolute;
+  top:40%;
+  left:5%;
+  width:90%;
+  height:100px;
+  background:#777;
+  border-radius:20px;
+  overflow:hidden;
+}
+
+#zone{
+  position:absolute;
+  top:40%;
+  left:50%;
+  transform:translateX(-50%);
+  width:90px;
+  height:90px;
+  border:3px solid #fff;
+  pointer-events:none;
+}
+
+.candy{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  height:40px;
+}
+
+#fist{
+  position:absolute;
+  top:30%;
+  left:50%;
+  transform:translateX(-50%);
+  width:90px;
+  pointer-events:none;
+  transition:transform .1s;
+}
+
+#controls{
+  position:absolute;
+  bottom:30px;
+  width:100%;
+  text-align:center;
+}
+
+#punchBtn{
+  width:120px;
+  height:120px;
+  border-radius:50%;
   border:none;
-  border-radius:12px;
-  font-size:16px;
+  background:#c00;
+  color:#fff;
+  font-size:18px;
+  font-weight:bold;
+}
+
+#counter{
+  margin-top:10px;
+  color:#fff;
+  font-size:18px;
 }
 </style>
 </head>
 
 <body>
 
+<div id="bg"></div>
+
 <!-- ЗАГРУЗКА -->
 <div class="overlay" id="loading">
   <div class="box">
-    <h2>Загрузка TulenmasCandy… 🍬</h2>
-  </div>
-</div>
-
-<div id="top">🕐 🕐 🕐</div>
-<div id="hearts"></div>
-
-<div id="box"></div>
-
-<div id="controls">
-  <button id="stopBtn">СТОП</button>
-  <div id="counter">
-    <span id="current">0</span> /
-    <span id="goal">0</span>
+    <h2>Загрузка элементов…</h2>
   </div>
 </div>
 
 <!-- ОБУЧЕНИЕ -->
 <div class="overlay" id="tutorial" style="display:none">
   <div class="box">
-    <h2>📦 TulenmasCandy Box</h2>
+    <h2>Обучение 👊</h2>
     <p>
-      Останови поток конфет 🍬<br><br>
-      Нужно попасть в диапазон<br>
-      <b>±3 от цели</b><br><br>
-      5 ошибок — блокировка навсегда.
+      По конвейеру едут конфеты 🍬<br><br>
+      Когда <b>неправильная</b> конфета<br>
+      находится в белой зоне ⬜<br>
+      нажми кнопку, чтобы выбить её.<br><br>
+      <b>Задача:</b> выбить 50 неправильных конфет
     </p>
-    <button onclick="startGame()">Понятно</button>
+    <button onclick="startTutorial()">Начать</button>
   </div>
 </div>
 
-<!-- ОВЕРЛЕЙ -->
-<div class="overlay" id="overlay" style="display:none">
-  <div class="box" id="overlayText"></div>
+<div id="game" style="display:none">
+  <img id="fist" src="E83F4545-0152-4EEE-B616-9817D1655B1C.png">
+  <div id="conveyor"></div>
+  <div id="zone"></div>
+
+  <div id="controls">
+    <button id="punchBtn">УДАР</button>
+    <div id="counter">0 / 50</div>
+  </div>
 </div>
 
 <script>
-const candyImg = "0D1FE365-BEBC-45DE-B474-68D1B195F3AC.png";
-
-/* 🔒 БЛОКИРОВКА */
-if(localStorage.getItem("tulen_blocked")){
-  document.body.innerHTML = `
-    <div class="overlay">
-      <div class="box">
-        <h2>⛔ ДОСТУП ЗАБЛОКИРОВАН</h2>
-        <p>Тюлень недоволен 🦭💔</p>
-      </div>
-    </div>`;
-}
-
-/* ПРЕДЗАГРУЗКА */
-const preload = new Image();
-preload.src = candyImg;
-preload.onload = ()=>{
-  document.getElementById("loading").style.display="none";
-  document.getElementById("tutorial").style.display="flex";
-};
-
-/* СЛОЖНОСТИ */
-const levels = [
-  {speed:650, streams:1, min:20, max:40},
-  {speed:380, streams:2, min:50, max:80},
-  {speed:200, streams:3, min:80, max:120}
+const goodCandy = "0D1FE365-BEBC-45DE-B474-68D1B195F3AC.png";
+const badCandies = [
+  "12B84A29-F10D-4B79-93F0-34E6B12E4AA4.png",
+  "AE95D2B0-7B3F-40F7-A6AA-B03876A18AB4.png"
 ];
 
-let level = 0;
-let hearts = 5;
-let goal = 0;
-let count = 0;
-let running = false;
-let interval;
-let progress = ["🕐","🕐","🕐"];
+const images = [
+  "0864A2E3-E668-43BB-ABE0-5D62B44467FC.jpeg",
+  "E83F4545-0152-4EEE-B616-9817D1655B1C.png",
+  goodCandy,
+  ...badCandies
+];
 
-const box = document.getElementById("box");
-const heartsEl = document.getElementById("hearts");
-const topEl = document.getElementById("top");
-const goalEl = document.getElementById("goal");
-const currentEl = document.getElementById("current");
-const overlay = document.getElementById("overlay");
-const overlayText = document.getElementById("overlayText");
+let speed = 1.5;
+let tutorialHits = 0;
+let startTime = null;
+let candies = [];
 
-function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+const conveyor = document.getElementById("conveyor");
+const zone = document.getElementById("zone");
+const fist = document.getElementById("fist");
+const counter = document.getElementById("counter");
 
-function updateUI(){
-  heartsEl.textContent = "❤️".repeat(hearts);
-  topEl.textContent = progress.join(" ");
-  goalEl.textContent = goal;
-  currentEl.textContent = count;
-}
+/* ПРЕДЗАГРУЗКА */
+let loaded = 0;
+images.forEach(src=>{
+  const i = new Image();
+  i.src = src;
+  i.onload = ()=>{
+    loaded++;
+    if(loaded === images.length){
+      document.getElementById("loading").style.display="none";
+      document.getElementById("tutorial").style.display="flex";
+    }
+  };
+});
 
-function startGame(){
+function startTutorial(){
   document.getElementById("tutorial").style.display="none";
-  startLevel();
+  document.getElementById("game").style.display="block";
+  startTime = Date.now();
+  loop();
+  spawnLoop();
 }
 
-function startLevel(){
-  const l = levels[level];
-  goal = rand(l.min, l.max);
-  count = 0;
-  running = true;
-  box.innerHTML="";
-  updateUI();
-
-  interval = setInterval(()=>{
-    for(let i=0;i<l.streams;i++) dropCandy();
-  }, l.speed);
+function spawnLoop(){
+  setInterval(spawnCandy, 1200);
 }
 
-/* 🍬 ПАДЕНИЕ И СТАК */
-function dropCandy(){
-  if(!running) return;
+function spawnCandy(){
+  const img = document.createElement("img");
+  const bad = Math.random()<0.4;
+  img.src = bad ? badCandies[Math.floor(Math.random()*badCandies.length)] : goodCandy;
+  img.className="candy";
+  img.dataset.bad = bad?"1":"0";
+  img.style.left = "-50px";
+  conveyor.appendChild(img);
+  candies.push(img);
+}
 
-  const candy = document.createElement("img");
-  candy.src = candyImg;
-  candy.className = "candy";
+function loop(){
+  const now = Date.now();
+  const elapsed = (now - startTime)/1000;
 
-  const size = 26;
-  let x = rand(10, box.clientWidth - size - 10);
-  let y = -size;
+  if(elapsed>10) speed=2;
+  if(elapsed>30) speed=2.7;
+  if(elapsed>60) speed=3.5;
 
-  candy.style.left = x+"px";
-  candy.style.top = y+"px";
-  box.appendChild(candy);
+  candies.forEach((c,i)=>{
+    let x = parseFloat(c.style.left);
+    x += speed;
+    c.style.left = x+"px";
 
-  const fall = setInterval(()=>{
-    y += 5;
-    let stop = false;
-
-    if(y + size >= box.clientHeight){
-      y = box.clientHeight - size;
-      stop = true;
-    }
-
-    document.querySelectorAll(".candy").forEach(o=>{
-      if(o===candy) return;
-      const oy = parseFloat(o.style.top);
-      const ox = parseFloat(o.style.left);
-      const overlapX = x < ox+size && x+size > ox;
-      const touchY = y+size >= oy && y+size <= oy+6;
-      if(overlapX && touchY){
-        y = oy - size;
-        stop = true;
+    if(x > conveyor.clientWidth){
+      if(c.dataset.bad==="1"){
+        // пропустил плохую
+        tutorialHits = Math.max(0, tutorialHits-1);
+        counter.textContent = tutorialHits+" / 50";
       }
-    });
-
-    candy.style.top = y+"px";
-    if(stop) clearInterval(fall);
-  },16);
-
-  count++;
-  currentEl.textContent = count;
-}
-
-function stopGame(){
-  if(!running) return;
-  running=false;
-  clearInterval(interval);
-
-  if(Math.abs(count - goal) <= 3){
-    progress[level] = "✅";
-    level++;
-
-    if(level === 3){
-      overlay.style.display="flex";
-      overlayText.innerHTML = `
-        <h2>🎉 ПОБЕДА</h2>
-        <p>Все сложности пройдены ✅✅✅</p>`;
-    }else{
-      showOverlay("Сложность пройдена ✅", startLevel);
+      c.remove();
+      candies.splice(i,1);
     }
-  }else{
-    hearts--;
-    if(hearts <= 0){
-      localStorage.setItem("tulen_blocked","1");
-      location.reload();
-    }else{
-      showOverlay("Ошибка 💔", startLevel);
+  });
+
+  requestAnimationFrame(loop);
+}
+
+document.getElementById("punchBtn").onclick = ()=>{
+  fist.style.transform="translateX(-50%) translateY(20px)";
+  setTimeout(()=>fist.style.transform="translateX(-50%)",100);
+
+  const zoneRect = zone.getBoundingClientRect();
+
+  candies.forEach((c,i)=>{
+    const r = c.getBoundingClientRect();
+    if(r.left>zoneRect.left && r.right<zoneRect.right){
+      if(c.dataset.bad==="1"){
+        tutorialHits++;
+        counter.textContent = tutorialHits+" / 50";
+        c.remove();
+        candies.splice(i,1);
+        if(tutorialHits>=50){
+          alert("Обучение пройдено! 🎉");
+        }
+      }
     }
-  }
-}
-
-function showOverlay(text, cb){
-  overlay.style.display="flex";
-  overlayText.innerHTML = `<p>${text}</p>`;
-  setTimeout(()=>{
-    overlay.style.display="none";
-    cb();
-  },1200);
-}
-
-document.getElementById("stopBtn").onclick = stopGame;
-updateUI();
+  });
+};
 </script>
 
 </body>
