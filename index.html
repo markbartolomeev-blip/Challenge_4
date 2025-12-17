@@ -9,7 +9,7 @@
 *{box-sizing:border-box}
 body{
   margin:0;
-  font-family:Arial, sans-serif;
+  font-family:Arial,sans-serif;
   background:#000;
   overflow:hidden;
   user-select:none;
@@ -22,6 +22,7 @@ body{
   z-index:-2;
 }
 
+/* затемнения */
 .overlay{
   position:fixed;
   inset:0;
@@ -40,26 +41,53 @@ body{
   max-width:90%;
 }
 
+/* ИГРА */
 #game{
   position:relative;
   width:100%;
   height:100vh;
 }
 
+/* КОНВЕЙЕР */
 #conveyor{
   position:absolute;
-  top:40%;
+  top:42%;
   left:5%;
   width:90%;
-  height:100px;
-  background:#777;
-  border-radius:20px;
+  height:110px;
+  border-radius:25px;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      #666 0,
+      #666 20px,
+      #777 20px,
+      #777 40px
+    );
+  box-shadow:
+    inset 0 10px 15px rgba(255,255,255,.15),
+    inset 0 -10px 15px rgba(0,0,0,.4),
+    0 8px 20px rgba(0,0,0,.6);
   overflow:hidden;
+}
+
+/* анимация ленты */
+#conveyor::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:inherit;
+  animation:moveBelt 1s linear infinite;
+}
+
+@keyframes moveBelt{
+  from{background-position:0 0}
+  to{background-position:40px 0}
 }
 
 #zone{
   position:absolute;
-  top:40%;
+  top:42%;
   left:50%;
   transform:translateX(-50%);
   width:90px;
@@ -72,7 +100,7 @@ body{
   position:absolute;
   top:50%;
   transform:translateY(-50%);
-  height:40px;
+  height:36px;
 }
 
 #fist{
@@ -85,6 +113,30 @@ body{
   transition:transform .1s;
 }
 
+/* UI */
+#ui{
+  position:absolute;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:15px;
+  align-items:center;
+}
+
+#counter{
+  background:#000;
+  color:#fff;
+  padding:8px 16px;
+  border-radius:15px;
+  font-size:18px;
+}
+
+#hearts{
+  font-size:22px;
+}
+
+/* кнопка */
 #controls{
   position:absolute;
   bottom:30px;
@@ -102,12 +154,6 @@ body{
   font-size:18px;
   font-weight:bold;
 }
-
-#counter{
-  margin-top:10px;
-  color:#fff;
-  font-size:18px;
-}
 </style>
 </head>
 
@@ -117,9 +163,7 @@ body{
 
 <!-- ЗАГРУЗКА -->
 <div class="overlay" id="loading">
-  <div class="box">
-    <h2>Загрузка элементов…</h2>
-  </div>
+  <div class="box"><h2>Загрузка…</h2></div>
 </div>
 
 <!-- ОБУЧЕНИЕ -->
@@ -127,107 +171,110 @@ body{
   <div class="box">
     <h2>Обучение 👊</h2>
     <p>
-      По конвейеру едут конфеты 🍬<br><br>
-      Когда <b>неправильная</b> конфета<br>
-      находится в белой зоне ⬜<br>
-      нажми кнопку, чтобы выбить её.<br><br>
-      <b>Задача:</b> выбить 50 неправильных конфет
+      Выбивай <b>неправильные</b> конфеты в белой зоне.<br><br>
+      ❌ Ошибка — минус сердце.<br><br>
+      <b>Цель:</b> 50 неправильных
     </p>
-    <button onclick="startTutorial()">Начать</button>
+    <button onclick="startGame()">Начать</button>
   </div>
 </div>
 
 <div id="game" style="display:none">
+  <div id="ui">
+    <div id="counter">0 / 50</div>
+    <div id="hearts">❤️❤️❤️</div>
+  </div>
+
   <img id="fist" src="E83F4545-0152-4EEE-B616-9817D1655B1C.png">
   <div id="conveyor"></div>
   <div id="zone"></div>
 
   <div id="controls">
     <button id="punchBtn">УДАР</button>
-    <div id="counter">0 / 50</div>
   </div>
 </div>
 
 <script>
-const goodCandy = "0D1FE365-BEBC-45DE-B474-68D1B195F3AC.png";
-const badCandies = [
+const goodCandy="0D1FE365-BEBC-45DE-B474-68D1B195F3AC.png";
+const badCandies=[
   "12B84A29-F10D-4B79-93F0-34E6B12E4AA4.png",
   "AE95D2B0-7B3F-40F7-A6AA-B03876A18AB4.png"
 ];
 
-const images = [
+const images=[
   "0864A2E3-E668-43BB-ABE0-5D62B44467FC.jpeg",
   "E83F4545-0152-4EEE-B616-9817D1655B1C.png",
   goodCandy,
   ...badCandies
 ];
 
-let speed = 1.5;
-let tutorialHits = 0;
-let startTime = null;
-let candies = [];
+let candies=[];
+let speed=1.6;
+let hits=0;
+let hearts=3;
+let startTime=0;
 
-const conveyor = document.getElementById("conveyor");
-const zone = document.getElementById("zone");
-const fist = document.getElementById("fist");
-const counter = document.getElementById("counter");
+const conveyor=document.getElementById("conveyor");
+const zone=document.getElementById("zone");
+const counter=document.getElementById("counter");
+const heartsEl=document.getElementById("hearts");
+const fist=document.getElementById("fist");
 
-/* ПРЕДЗАГРУЗКА */
-let loaded = 0;
+/* загрузка */
+let loaded=0;
 images.forEach(src=>{
-  const i = new Image();
-  i.src = src;
-  i.onload = ()=>{
+  const i=new Image();
+  i.src=src;
+  i.onload=()=>{
     loaded++;
-    if(loaded === images.length){
-      document.getElementById("loading").style.display="none";
-      document.getElementById("tutorial").style.display="flex";
+    if(loaded===images.length){
+      loading.style.display="none";
+      tutorial.style.display="flex";
     }
   };
 });
 
-function startTutorial(){
-  document.getElementById("tutorial").style.display="none";
-  document.getElementById("game").style.display="block";
-  startTime = Date.now();
-  loop();
-  spawnLoop();
-}
-
-function spawnLoop(){
-  setInterval(spawnCandy, 1200);
+function startGame(){
+  tutorial.style.display="none";
+  game.style.display="block";
+  startTime=Date.now();
+  setInterval(spawnCandy,1300);
+  requestAnimationFrame(loop);
 }
 
 function spawnCandy(){
-  const img = document.createElement("img");
-  const bad = Math.random()<0.4;
-  img.src = bad ? badCandies[Math.floor(Math.random()*badCandies.length)] : goodCandy;
+  const img=document.createElement("img");
+  const bad=Math.random()<0.25;
+  img.src=bad ? badCandies[Math.floor(Math.random()*badCandies.length)] : goodCandy;
   img.className="candy";
-  img.dataset.bad = bad?"1":"0";
-  img.style.left = "-50px";
+  img.dataset.bad=bad?"1":"0";
+  img.style.left="-50px";
   conveyor.appendChild(img);
   candies.push(img);
 }
 
-function loop(){
-  const now = Date.now();
-  const elapsed = (now - startTime)/1000;
+function loseHeart(){
+  hearts--;
+  heartsEl.textContent="❤️".repeat(hearts);
+  if(hearts<=0){
+    alert("Игра окончена 💀");
+    location.reload();
+  }
+}
 
+function loop(){
+  const elapsed=(Date.now()-startTime)/1000;
   if(elapsed>10) speed=2;
   if(elapsed>30) speed=2.7;
   if(elapsed>60) speed=3.5;
 
   candies.forEach((c,i)=>{
-    let x = parseFloat(c.style.left);
-    x += speed;
-    c.style.left = x+"px";
+    let x=parseFloat(c.style.left);
+    x+=speed;
+    c.style.left=x+"px";
 
-    if(x > conveyor.clientWidth){
-      if(c.dataset.bad==="1"){
-        // пропустил плохую
-        tutorialHits = Math.max(0, tutorialHits-1);
-        counter.textContent = tutorialHits+" / 50";
-      }
+    if(x>conveyor.clientWidth){
+      if(c.dataset.bad==="1") loseHeart();
       c.remove();
       candies.splice(i,1);
     }
@@ -236,24 +283,23 @@ function loop(){
   requestAnimationFrame(loop);
 }
 
-document.getElementById("punchBtn").onclick = ()=>{
+punchBtn.onclick=()=>{
   fist.style.transform="translateX(-50%) translateY(20px)";
   setTimeout(()=>fist.style.transform="translateX(-50%)",100);
 
-  const zoneRect = zone.getBoundingClientRect();
+  const z=zone.getBoundingClientRect();
 
   candies.forEach((c,i)=>{
-    const r = c.getBoundingClientRect();
-    if(r.left>zoneRect.left && r.right<zoneRect.right){
+    const r=c.getBoundingClientRect();
+    if(r.left>z.left && r.right<z.right){
       if(c.dataset.bad==="1"){
-        tutorialHits++;
-        counter.textContent = tutorialHits+" / 50";
-        c.remove();
-        candies.splice(i,1);
-        if(tutorialHits>=50){
-          alert("Обучение пройдено! 🎉");
-        }
+        hits++;
+        counter.textContent=hits+" / 50";
+      }else{
+        loseHeart();
       }
+      c.remove();
+      candies.splice(i,1);
     }
   });
 };
