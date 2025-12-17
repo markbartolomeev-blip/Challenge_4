@@ -153,12 +153,86 @@ body{
   font-size:18px;
   font-weight:bold;
 }
+
+/* Сообщение об успехе */
+.success-message {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  color: white;
+  text-align: center;
+  padding: 20px;
+  display: none;
+}
+
+.success-content {
+  background: linear-gradient(45deg, #ff3366, #ff9933);
+  padding: 40px;
+  border-radius: 20px;
+  max-width: 600px;
+  box-shadow: 0 0 50px rgba(255, 51, 102, 0.5);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.success-title {
+  font-size: 36px;
+  margin-bottom: 20px;
+  color: #fff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.success-text {
+  font-size: 24px;
+  margin-bottom: 30px;
+  color: #ffcc00;
+}
+
+.continue-button {
+  background: #4cff00;
+  color: #000;
+  border: none;
+  padding: 15px 30px;
+  font-size: 20px;
+  font-weight: bold;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.continue-button:hover {
+  background: #33cc00;
+  transform: scale(1.1);
+}
 </style>
 </head>
 
 <body>
 
 <div id="bg"></div>
+
+<!-- Сообщение об успешном прохождении -->
+<div id="successMessage" class="success-message">
+  <div class="success-content">
+    <h1 class="success-title">🎉 ПОБЕДА! 🎉</h1>
+    <p class="success-text">Молодец! Ты прошел(-а) мини-игру №4</p>
+    <p style="font-size: 20px; margin-bottom: 20px;">Не забудь отправить этот скрин в группу!</p>
+    <button class="continue-button" onclick="location.reload()">Играть еще раз</button>
+  </div>
+</div>
 
 <div class="overlay" id="loading">
   <div class="box"><h2>Загрузка…</h2></div>
@@ -220,6 +294,7 @@ const zone=document.getElementById("zone");
 const counter=document.getElementById("counter");
 const heartsEl=document.getElementById("hearts");
 const fist=document.getElementById("fist");
+const successMessage=document.getElementById("successMessage");
 
 let loaded=0;
 images.forEach(src=>{
@@ -262,6 +337,46 @@ function loseHeart(){
   }
 }
 
+function showSuccessMessage(){
+  // Скрываем игру
+  game.style.display="none";
+  // Показываем сообщение об успехе
+  successMessage.style.display="flex";
+  
+  // Добавляем конфетти-эффект
+  createConfetti();
+}
+
+function createConfetti(){
+  const colors=['#ff3366','#ff9933','#ffcc00','#33ff66','#3366ff','#9933ff'];
+  
+  for(let i=0;i<100;i++){
+    const confetti=document.createElement('div');
+    confetti.style.position='fixed';
+    confetti.style.width='10px';
+    confetti.style.height='10px';
+    confetti.style.background=colors[Math.floor(Math.random()*colors.length)];
+    confetti.style.borderRadius='50%';
+    confetti.style.left=Math.random()*100+'%';
+    confetti.style.top='-10px';
+    confetti.style.zIndex='101';
+    
+    const animation=confetti.animate([
+      { transform: `translateY(0) rotate(0deg)`, opacity: 1 },
+      { transform: `translateY(${window.innerHeight+100}px) rotate(${Math.random()*360}deg)`, opacity: 0 }
+    ], {
+      duration: Math.random()*3000+2000,
+      easing: 'cubic-bezier(0.215, 0.610, 0.355, 1)'
+    });
+    
+    document.body.appendChild(confetti);
+    
+    animation.onfinish=()=>{
+      confetti.remove();
+    };
+  }
+}
+
 function loop(){
   const elapsed=(Date.now()-startTime)/1000;
   if(elapsed>10) speed=2.8;
@@ -295,6 +410,11 @@ punchBtn.onclick=()=>{
       if(c.dataset.bad==="1"){
         hits++;
         counter.textContent=hits+" / 50";
+        
+        // Проверяем достижение цели
+        if(hits>=50){
+          showSuccessMessage();
+        }
       }else{
         loseHeart();
       }
